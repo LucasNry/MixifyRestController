@@ -41,7 +41,7 @@ public class HttpRequest {
         String[] requestLines = requestString.split(CRLF_REGEX);
 
         String[] initialLine = parseInitialLine(requestLines[index]);
-        Method method = Method.valueOf(initialLine[0]);
+        Method method = Method.fromString(initialLine[0]);
         HttpVersion version = HttpVersion.fromString(initialLine[2]);
 
         String[] pathDivided = initialLine[1].split(PATH_SEPARATOR);

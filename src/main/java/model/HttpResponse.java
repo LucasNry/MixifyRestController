@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +25,7 @@ public class HttpResponse {
     private RequestStatus requestStatus = RequestStatus.OK;
 
     @Builder.Default
-    private Headers headers = new Headers(Collections.emptyMap());
+    private Headers headers = new Headers();
 
     @Builder.Default
     private String body = "";
@@ -80,17 +79,14 @@ public class HttpResponse {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        headers.addHeader(Headers.CONTENT_LENGTH, String.valueOf(body.getBytes().length));
 
         sb
                 .append(String.format(INITIAL_LINE_TEMPLATE, version.getStringValue(), requestStatus.getStatusCode(), requestStatus.getStatusMessage()))
                 .append(CRLF)
-                .append(headers.toString());
-
-        if (!body.isEmpty()) {
-            sb
-                    .append(CRLF)
-                    .append(body);
-        }
+                .append(headers.toString())
+                .append(CRLF)
+                .append(body);
 
         return sb.toString();
     }

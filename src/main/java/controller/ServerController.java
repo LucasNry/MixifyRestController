@@ -12,24 +12,17 @@ public abstract class ServerController {
 
     private ServerSocket serverSocket;
 
-    ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+    ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
 
     public ServerController(int port) throws IOException {
         serverSocket = new ServerSocket(port);
+        System.out.println(String.format("Running on port [%s]", port));
     }
 
     public void start() throws Exception {
-        RequestHandler requestHandler = new RequestHandler(); // Consider using singleton Spring bean
-
         while (true) {
             Socket socket = serverSocket.accept();
-            threadPoolExecutor.submit(() -> {
-                try (Socket clientSocket = socket) {
-                    requestHandler.handleRequest(clientSocket.getInputStream(), clientSocket.getOutputStream());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
+            threadPoolExecutor.submit(new RequestHandler(socket));
         }
     }
 }

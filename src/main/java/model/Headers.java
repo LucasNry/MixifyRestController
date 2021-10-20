@@ -2,6 +2,7 @@ package model;
 
 import lombok.AllArgsConstructor;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,6 +15,7 @@ public class Headers {
     public static final String DATE = "Date";
     public static final String CONNECTION = "Connection";
     public static final String CONTENT_TYPE = "Content-Type";
+    public static final String CONTENT_LENGTH = "Content-Length";
     public static final String CONTENT_ENCODING = "Content-Encoding";
     public static final String KEEP_ALIVE = "Content-Encoding";
     public static final String USER_AGENT = "User-Agent";
@@ -24,6 +26,10 @@ public class Headers {
 
 
     private Map<String, String> headerMap;
+
+    public Headers() {
+        this(new HashMap<String, String>(){{ put(CONTENT_TYPE, "text/html"); }});
+    }
 
     public Headers(String... keyOrValue) {
         int numberOfParameters = keyOrValue.length;
@@ -41,6 +47,10 @@ public class Headers {
 
     public String getHeader(String headerName) {
         return headerMap.getOrDefault(headerName, null);
+    }
+
+    public void addHeader(String headerName, String headerValue) {
+        headerMap.put(headerName, headerValue);
     }
 
     public int getSize() {
