@@ -1,10 +1,9 @@
 package controller;
 
 import annotations.GetOperation;
+import exceptions.InvalidEndpointException;
 import exceptions.InvalidHandlerMethodException;
 import lombok.NoArgsConstructor;
-import model.HttpRequest;
-import model.HttpResponse;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -17,12 +16,6 @@ public class DeleteController extends HttpMethodController {
 
     private Map<String, Method> operationsMap;
 
-
-    @Override
-    public HttpResponse handle(HttpRequest httpRequest) throws Exception {
-        return null;
-    }
-
     @Override
     void setupOperationMap() throws InvalidHandlerMethodException {
         Set<Method> operationHandlers = getOperationHandlers(GetOperation.class);
@@ -34,5 +27,14 @@ public class DeleteController extends HttpMethodController {
                                 Function.identity()
                         )
                 );
+    }
+
+    @Override
+    Method getOperation(String endpoint) throws InvalidEndpointException {
+        if (!operationsMap.containsKey(endpoint)) {
+            throwInvalidEndpointException(endpoint);
+        }
+
+        return operationsMap.get(endpoint);
     }
 }

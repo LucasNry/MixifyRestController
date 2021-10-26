@@ -2,7 +2,6 @@ package model;
 
 import lombok.AllArgsConstructor;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -17,7 +16,7 @@ public class Headers {
     public static final String CONTENT_TYPE = "Content-Type";
     public static final String CONTENT_LENGTH = "Content-Length";
     public static final String CONTENT_ENCODING = "Content-Encoding";
-    public static final String KEEP_ALIVE = "Content-Encoding";
+    public static final String KEEP_ALIVE = "Keep-Alive";
     public static final String USER_AGENT = "User-Agent";
     public static final String ACCEPT_LANGUAGE = "Accept-Language";
     public static final String ACCEPT_ENCODING = "Accept-Encoding";
