@@ -18,7 +18,8 @@ public class HttpRequest {
     private static final String PATH_TEMPLATE = "%s?%s";
 
     private static final String CRLF_REGEX = "\\r\\n";
-    private static final String INITIAL_LINE_SEPARATOR = " ";
+    private static final String SPACE = " ";
+    private static final String INITIAL_LINE_SEPARATOR = SPACE;
     private static final String PATH_SEPARATOR = "\\?";
     private static final String PARAMETER_SEPARATOR = "&";
     private static final String PARAMETER_VALUE_SEPARATOR = "=";
@@ -97,7 +98,7 @@ public class HttpRequest {
         while (index < requestLines.length && !requestLines[index].isEmpty()) {
             String[] headerEntry = requestLines[index].split(HEADER_SEPARATOR, 2);
             String headerName = headerEntry[0];
-            String headerValue = headerEntry[1].substring(1); // Removes first space
+            String headerValue = headerEntry[1].replace(SPACE, ""); // Remove spaces
 
             headerMap.put(headerName, headerValue);
             index++;

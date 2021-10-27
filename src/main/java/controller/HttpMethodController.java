@@ -1,7 +1,11 @@
 package controller;
 
+import annotations.QueryParameter;
+import annotations.RequestBody;
+import annotations.RequestHeader;
 import exceptions.InvalidEndpointException;
 import exceptions.InvalidHandlerMethodException;
+import model.Headers;
 import model.HttpRequest;
 import model.HttpResponse;
 import model.QueryParameters;
@@ -10,15 +14,19 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class HttpMethodController {
     private static final String INVALID_ENDPOINT_ERROR_MESSAGE_TEMPLATE = "No handler method was found for endpoint [%s]";
     private static final String INVALID_RETURN_TYPE_ERROR_MESSAGE_TEMPLATE = "Handler method [%s] does not conform to expect method signature. Expected = 'public HttpResponse YOUR_METHOD_NAME(QueryParameters queryParameters, String body)'";
-    private static final String INVALID_HANDLER_METHOD_SIGNATURE_ERROR_MESSAGE_TEMPLATE = "Handler methods must return an object of type String. Actual = [%s]";
+    private static final String HANDLER_PARAMETER_NOT_ANNOTATED_ERROR_MESSAGE_TEMPLATE = "All Handler method's parameters must be annotated with one of these three annotations { @RequestHandler, @QueryParameter, @RequestBody }. Affected handler = [%s]";
     private static final String INVALID_HANDLER_METHOD_NO_EMPTY_CONSTRUCTOR_ERROR_MESSAGE_TEMPLATE = "Handler method's classes must have an empty constructor, [%s] does not";
     private static final String INVALID_HANDLER_METHOD_NOT_PUBLIC_ERROR_MESSAGE_TEMPLATE = "Handler method [%s] must be public";
+
+    private List<Class<?>> allowedParameterAnnotations = Arrays.asList(RequestHeader.class, QueryParameter.class, RequestBody.class);
 
     abstract void setupOperationMap() throws InvalidHandlerMethodException;
 
@@ -31,8 +39,44 @@ public abstract class HttpMethodController {
         Class<?> operationHandlerClass = operationHandler.getDeclaringClass();
         Object operationHandlerClassInstance = operationHandlerClass.getConstructor().newInstance();
 
+        Object[] parameterArray = getHandlerParameters(httpRequest, operationHandler);
+
         return (HttpResponse) operationHandler
-                .invoke(operationHandlerClassInstance, httpRequest.getQueryParameters(), httpRequest.getBody());
+                .invoke(operationHandlerClassInstance, parameterArray);
+    }
+
+    private Object[] getHandlerParameters(HttpRequest httpRequest, Method method) {
+        Object[] handlerParameters = new Object[method.getParameterCount()];
+        Annotation[][] annotationsByParameter = method.getParameterAnnotations();
+
+        for (int i = 0; i < annotationsByParameter.length; i++) {
+            for (Annotation annotation : annotationsByParameter[i]) {
+                handlerParameters[i] = fillParameter(annotation, httpRequest);
+            }
+        }
+
+        return handlerParameters;
+    }
+
+    private Object fillParameter(Annotation parameterAnnotation, HttpRequest httpRequest) {
+        Class<?> annotationType = parameterAnnotation.annotationType();
+
+        Headers headers = httpRequest.getHeaders();
+        QueryParameters queryParameters = httpRequest.getQueryParameters();
+
+        if (RequestHeader.class.equals(annotationType)) {
+            return headers.getHeader(
+                    ((RequestHeader) parameterAnnotation).value()
+            );
+        } else if (QueryParameter.class.equals(annotationType)) {
+            return queryParameters.getParameter(
+                    ((QueryParameter) parameterAnnotation).value()
+            );
+        } else if (RequestBody.class.equals(annotationType)) {
+            return httpRequest.getBody();
+        }
+
+        return null;
     }
 
     public Set<Method> getOperationHandlers(Class<? extends Annotation> annotationClass) throws InvalidHandlerMethodException {
@@ -53,13 +97,19 @@ public abstract class HttpMethodController {
     }
 
     private void assertParameters(Method handler) throws InvalidHandlerMethodException {
-        if (handler.getParameterCount() != 2) {
-            throw new InvalidHandlerMethodException(String.format(INVALID_HANDLER_METHOD_SIGNATURE_ERROR_MESSAGE_TEMPLATE, handler.getName()));
-        }
+        if (!(handler.getParameterCount() == 0)) {
+            Annotation[][] annotationsByParameters = handler.getParameterAnnotations();
+            for (Annotation[] annotationsByParameter : annotationsByParameters) {
+                if (annotationsByParameter.length == 0) {
+                    throw new InvalidHandlerMethodException(String.format(HANDLER_PARAMETER_NOT_ANNOTATED_ERROR_MESSAGE_TEMPLATE, handler.getName()));
+                }
 
-        Class<?>[] parameterTypes = handler.getParameterTypes();
-        if (parameterTypes[0] != QueryParameters.class || parameterTypes[1] != String.class) {
-            throw new InvalidHandlerMethodException(String.format(INVALID_HANDLER_METHOD_SIGNATURE_ERROR_MESSAGE_TEMPLATE, handler.getName()));
+                for (Annotation annotation : annotationsByParameter) {
+                    if (!allowedParameterAnnotations.contains(annotation.annotationType())) {
+                        throw new InvalidHandlerMethodException(String.format(HANDLER_PARAMETER_NOT_ANNOTATED_ERROR_MESSAGE_TEMPLATE, handler.getName()));
+                    }
+                }
+            }
         }
     }
 
