@@ -20,6 +20,7 @@ public class Headers {
     public static final String USER_AGENT = "User-Agent";
     public static final String ACCEPT_LANGUAGE = "Accept-Language";
     public static final String ACCEPT_ENCODING = "Accept-Encoding";
+    public static final String ACCESS_CONTROL_ALLOW_ORIGIN = "Access-Control-Allow-Origin";
 
     private static final String UNEVEN_NUMBER_OF_ARGUMENTS_ERROR_TEPLATE = "The number of parameters must be even, consisting of key/value pairs. [Number of parameters: [%s]]";
 
@@ -27,7 +28,10 @@ public class Headers {
     private Map<String, String> headerMap;
 
     public Headers() {
-        this(new HashMap<String, String>(){{ put(CONTENT_TYPE, "text/html"); }});
+        this(new HashMap<String, String>(){{
+            put(CONTENT_TYPE, "text/html");
+            put(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+        }});
     }
 
     public Headers(String... keyOrValue) {

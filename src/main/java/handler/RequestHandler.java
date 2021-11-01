@@ -19,6 +19,9 @@ public class RequestHandler implements Runnable {
     private static final String KEEP_ALIVE_SEPARATOR = ",";
     private static final String KEY_VALUE_SEPARATOR = "=";
 
+    private static final int DEFAULT_TIMEOUT = 1000;
+    private static final int DEFAULT_MAX_CON = 10;
+
     private Socket clientSocket;
     private InputStream clientInputStream;
     private OutputStream clientOutputStream;
@@ -75,11 +78,19 @@ public class RequestHandler implements Runnable {
 
     private void handleKeepAliveRequest(HttpRequest httpRequest) throws Exception {
         Headers headers = httpRequest.getHeaders();
-        String keepAliveHeaderContent = headers.getHeader(Headers.KEEP_ALIVE);
-        String[] splitContent = keepAliveHeaderContent.split(KEEP_ALIVE_SEPARATOR);
+        int timeout;
+        int maxCon;
 
-        int timeout = getValueFromKVPair(splitContent[0]); // ms
-        int maxCon = getValueFromKVPair(splitContent[1].substring(1)); // Removing preceding space
+        try {
+            String keepAliveHeaderContent = headers.getHeader(Headers.KEEP_ALIVE);
+            String[] splitContent = keepAliveHeaderContent.split(KEEP_ALIVE_SEPARATOR);
+
+            timeout = getValueFromKVPair(splitContent[0]); // ms
+            maxCon = getValueFromKVPair(splitContent[1].substring(1)); // Removing preceding space
+        } catch (Exception e) {
+            timeout = DEFAULT_TIMEOUT;
+            maxCon = DEFAULT_MAX_CON;
+        }
 
         int nOfConnections = 0;
         long timeOfLastRequest = System.currentTimeMillis();
