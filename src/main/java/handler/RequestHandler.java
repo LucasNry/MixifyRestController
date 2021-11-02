@@ -20,7 +20,7 @@ public class RequestHandler implements Runnable {
     private static final String KEY_VALUE_SEPARATOR = "=";
 
     private static final int DEFAULT_TIMEOUT = 1000;
-    private static final int DEFAULT_MAX_CON = 10;
+    private static final int DEFAULT_MAX_CON = 1;
 
     private Socket clientSocket;
     private InputStream clientInputStream;
@@ -47,6 +47,7 @@ public class RequestHandler implements Runnable {
         try {
             httpRequest = getHttpRequest(clientInputStream);
         } catch (Exception e) {
+            e.printStackTrace();
             postHttpResponse(
                     HttpResponse
                         .builder()
@@ -92,7 +93,7 @@ public class RequestHandler implements Runnable {
             maxCon = DEFAULT_MAX_CON;
         }
 
-        int nOfConnections = 0;
+        int nOfConnections = 1;
         long timeOfLastRequest = System.currentTimeMillis();
         boolean isKeepAlive;
         while (

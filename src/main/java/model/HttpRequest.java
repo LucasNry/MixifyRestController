@@ -47,10 +47,12 @@ public class HttpRequest {
 
         String[] pathDivided = initialLine[1].split(PATH_SEPARATOR);
         String path = pathDivided[0];
-        QueryParameters queryParameters = null;
+        QueryParameters queryParameters;
 
         if (pathDivided.length > 1) {
             queryParameters = parseQueryParameters(pathDivided[1]);
+        } else {
+            queryParameters = new QueryParameters();
         }
 
         index++;

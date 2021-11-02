@@ -29,23 +29,21 @@ public class Headers {
 
     public Headers() {
         this(new HashMap<String, String>(){{
-            put(CONTENT_TYPE, "text/html");
+            put(CONTENT_TYPE, "application/json");
             put(ACCESS_CONTROL_ALLOW_ORIGIN, "*");
         }});
     }
 
     public Headers(String... keyOrValue) {
+        this();
         int numberOfParameters = keyOrValue.length;
         if (numberOfParameters % 2 != 0) {
             throw new IllegalArgumentException(String.format(UNEVEN_NUMBER_OF_ARGUMENTS_ERROR_TEPLATE, numberOfParameters));
         }
 
-        Map<String, String> headerMap = new HashMap<>();
         for (int i = 0; i < numberOfParameters; i += 2) {
             headerMap.put(keyOrValue[i], keyOrValue[i + 1]);
         }
-
-        this.headerMap = headerMap;
     }
 
     public String getHeader(String headerName) {
