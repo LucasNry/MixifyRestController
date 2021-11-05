@@ -78,16 +78,16 @@ public class HttpResponse {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        headers.addHeader(Headers.CONTENT_LENGTH, String.valueOf(body.getBytes().length));
+        if (!headers.hasHeader(Headers.CONTENT_LENGTH)) {
+            headers.addHeader(Headers.CONTENT_LENGTH, String.valueOf(body.getBytes().length));
+        }
 
-        sb
+        return new StringBuilder()
                 .append(String.format(INITIAL_LINE_TEMPLATE, version.getStringValue(), requestStatus.getStatusCode(), requestStatus.getStatusMessage()))
                 .append(CRLF)
                 .append(headers.toString())
                 .append(CRLF)
-                .append(body);
-
-        return sb.toString();
+                .append(body)
+                .toString();
     }
 }

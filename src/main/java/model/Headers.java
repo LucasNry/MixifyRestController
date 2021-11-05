@@ -54,6 +54,10 @@ public class Headers {
         headerMap.put(headerName, headerValue);
     }
 
+    public boolean hasHeader(String headerKey) {
+        return headerMap.containsKey(headerKey);
+    }
+
     public int getSize() {
         return headerMap.size();
     }

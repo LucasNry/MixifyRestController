@@ -57,6 +57,10 @@ public class RequestHandler implements Runnable {
             return;
         }
 
+        if (httpRequest == null) {
+            return;
+        }
+
         Headers requestHeaders = httpRequest.getHeaders();
         String connectionHeader = requestHeaders.getHeader(Headers.CONNECTION);
         ConnectionType connectionType = ConnectionType.fromValue(connectionHeader);
@@ -114,6 +118,10 @@ public class RequestHandler implements Runnable {
                     return;
                 }
 
+                if (newHttpRequest == null) {
+                    continue;
+                }
+
                 timeOfLastRequest = System.currentTimeMillis();
                 handleRequest(newHttpRequest);
 
@@ -169,6 +177,11 @@ public class RequestHandler implements Runnable {
         dataInputStream.readFully(requestBuffer);
 
         String requestAsString = new String(requestBuffer);
+
+        if (requestAsString.isEmpty()) {
+            return null;
+        }
+
         return HttpRequest.fromString(requestAsString);
     }
 
