@@ -12,7 +12,7 @@ public abstract class ServerController {
 
     private ServerSocket serverSocket;
 
-    private ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+    private ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 
     public ServerController(int port) throws IOException {
         serverSocket = new ServerSocket(port);

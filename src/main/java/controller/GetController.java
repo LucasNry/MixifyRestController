@@ -1,15 +1,15 @@
 package controller;
 
+import annotations.ExposeHeaders;
 import annotations.GetOperation;
 import exceptions.InvalidEndpointException;
 import exceptions.InvalidHandlerMethodException;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Component
 public class GetController extends HttpMethodController {
@@ -22,14 +22,17 @@ public class GetController extends HttpMethodController {
     @Override
     void setupOperationMap() throws InvalidHandlerMethodException {
         Set<Method> operationHandlers = getOperationHandlers(GetOperation.class);
-        operationsMap = operationHandlers
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                method -> method.getAnnotation(GetOperation.class).endpoint(),
-                                Function.identity()
-                        )
-                );
+        operationsMap = new HashMap<>();
+        for (Method operationHandler : operationHandlers) {
+            String endpoint = operationHandler.getAnnotation(GetOperation.class).endpoint();
+
+            operationsMap.put(endpoint, operationHandler);
+            if (operationHandler.isAnnotationPresent(ExposeHeaders.class)) {
+                String[] exposeHeaders = operationHandler.getAnnotation(ExposeHeaders.class).keys();
+
+                exposedHeadersByEndpoint.put(endpoint, exposeHeaders);
+            }
+        }
     }
 
     @Override

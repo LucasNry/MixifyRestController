@@ -1,15 +1,15 @@
 package controller;
 
-import annotations.GetOperation;
+import annotations.ExposeHeaders;
+import annotations.HeadOperation;
 import exceptions.InvalidEndpointException;
 import exceptions.InvalidHandlerMethodException;
 import lombok.NoArgsConstructor;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @NoArgsConstructor
 public class HeadController extends HttpMethodController {
@@ -18,15 +18,18 @@ public class HeadController extends HttpMethodController {
 
     @Override
     void setupOperationMap() throws InvalidHandlerMethodException {
-        Set<Method> operationHandlers = getOperationHandlers(GetOperation.class);
-        operationsMap = operationHandlers
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                method -> method.getAnnotation(GetOperation.class).endpoint(),
-                                Function.identity()
-                        )
-                );
+        Set<Method> operationHandlers = getOperationHandlers(HeadOperation.class);
+        operationsMap = new HashMap<>();
+        for (Method operationHandler : operationHandlers) {
+            String endpoint = operationHandler.getAnnotation(HeadOperation.class).endpoint();
+
+            operationsMap.put(endpoint, operationHandler);
+            if (operationHandler.isAnnotationPresent(ExposeHeaders.class)) {
+                String[] exposeHeaders = operationHandler.getAnnotation(ExposeHeaders.class).keys();
+
+                exposedHeadersByEndpoint.put(endpoint, exposeHeaders);
+            }
+        }
     }
 
     @Override

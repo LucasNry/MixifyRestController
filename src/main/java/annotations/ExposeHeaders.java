@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface GetOperation {
-    public String endpoint() default "";
+public @interface ExposeHeaders {
+    String[] keys();
 }

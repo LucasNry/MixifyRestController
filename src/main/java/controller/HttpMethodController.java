@@ -15,11 +15,15 @@ import org.reflections.scanners.MethodAnnotationsScanner;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class HttpMethodController {
+    protected static final String SEPARATOR = ", ";
+
     private static final String INVALID_ENDPOINT_ERROR_MESSAGE_TEMPLATE = "No handler method was found for endpoint [%s]";
     private static final String INVALID_RETURN_TYPE_ERROR_MESSAGE_TEMPLATE = "Handler method [%s] does not conform to expect method signature. Expected = 'public HttpResponse YOUR_METHOD_NAME(QueryParameters queryParameters, String body)'";
     private static final String HANDLER_PARAMETER_NOT_ANNOTATED_ERROR_MESSAGE_TEMPLATE = "All Handler method's parameters must be annotated with one of these three annotations { @RequestHandler, @QueryParameter, @RequestBody }. Affected handler = [%s]";
@@ -28,11 +32,13 @@ public abstract class HttpMethodController {
 
     private List<Class<?>> allowedParameterAnnotations = Arrays.asList(RequestHeader.class, QueryParameter.class, RequestBody.class);
 
+    protected static Map<String, String[]> exposedHeadersByEndpoint = new HashMap<>();
+
     abstract void setupOperationMap() throws InvalidHandlerMethodException;
 
     abstract Method getOperation(String endpoint) throws InvalidEndpointException;
 
-    public HttpResponse handle(HttpRequest httpRequest) throws Exception {
+    public synchronized HttpResponse handle(HttpRequest httpRequest) throws Exception {
         String endpoint = httpRequest.getPath();
 
         Method operationHandler = getOperation(endpoint);
@@ -40,9 +46,13 @@ public abstract class HttpMethodController {
         Object operationHandlerClassInstance = operationHandlerClass.getConstructor().newInstance();
 
         Object[] parameterArray = getHandlerParameters(httpRequest, operationHandler);
+        HttpResponse httpResponse = (HttpResponse) operationHandler.invoke(operationHandlerClassInstance, parameterArray);
 
-        return (HttpResponse) operationHandler
-                .invoke(operationHandlerClassInstance, parameterArray);
+        if (exposedHeadersByEndpoint.containsKey(endpoint)) {
+            httpResponse.getHeaders().addHeader(Headers.ACCESS_CONTROL_EXPOSE_HEADERS, getExposedHeaders(endpoint));
+        }
+
+        return httpResponse;
     }
 
     private Object[] getHandlerParameters(HttpRequest httpRequest, Method method) {
@@ -133,6 +143,10 @@ public abstract class HttpMethodController {
         if (handler.isAccessible()) {
             throw new InvalidHandlerMethodException(String.format(INVALID_HANDLER_METHOD_NOT_PUBLIC_ERROR_MESSAGE_TEMPLATE, handler.getName()));
         }
+    }
+
+    protected String getExposedHeaders(String path) {
+        return String.join(SEPARATOR, exposedHeadersByEndpoint.get(path));
     }
 
     protected void throwInvalidEndpointException(String endpoint) throws InvalidEndpointException {

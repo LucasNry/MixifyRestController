@@ -39,7 +39,7 @@ public class HttpRequestTest {
                 "Test\r\n" +
                 "Test2");
 
-        Assert.assertEquals(Method.GET, request.getMethod());
+        Assert.assertEquals(HttpMethod.GET, request.getHttpMethod());
         Assert.assertEquals(HttpVersion.ONE_DOT_ONE, request.getHttpVersion());
         Assert.assertEquals("/", request.getPath());
         Assert.assertNull(request.getQueryParameters());
@@ -68,7 +68,7 @@ public class HttpRequestTest {
                 "Connection: keep-alive\r\n" +
                 "Content-Length: 4");
 
-        Assert.assertEquals(Method.GET, request.getMethod());
+        Assert.assertEquals(HttpMethod.GET, request.getHttpMethod());
         Assert.assertEquals(HttpVersion.ONE_DOT_ONE, request.getHttpVersion());
         Assert.assertEquals("/", request.getPath());
         Assert.assertNull(request.getQueryParameters());
@@ -83,7 +83,7 @@ public class HttpRequestTest {
                 "Test\r\n" +
                 "Test2");
 
-        Assert.assertEquals(Method.GET, request.getMethod());
+        Assert.assertEquals(HttpMethod.GET, request.getHttpMethod());
         Assert.assertEquals(HttpVersion.ONE_DOT_ONE, request.getHttpVersion());
         Assert.assertEquals("/", request.getPath());
         Assert.assertNull(request.getQueryParameters());
@@ -115,7 +115,7 @@ public class HttpRequestTest {
                 "Test\r\n" +
                 "Test2");
 
-        Assert.assertEquals(Method.GET, request.getMethod());
+        Assert.assertEquals(HttpMethod.GET, request.getHttpMethod());
         Assert.assertEquals(HttpVersion.ONE_DOT_ONE, request.getHttpVersion());
         Assert.assertEquals("/", request.getPath());
         Assert.assertEquals(SAMPLE_QUERY_PARAMETER.getParameter("sampleQueryParamKey"), request.getQueryParameters().getParameter("sampleQueryParamKey"));
@@ -128,13 +128,13 @@ public class HttpRequestTest {
         String expectedPath = "/test";
         String expectedBody = "Test";
 
-        HttpRequest originalHttpRequest = new HttpRequest(Method.GET, expectedPath, SAMPLE_QUERY_PARAMETER, HttpVersion.ONE_DOT_ONE, SAMPLE_HEADER, expectedBody);
+        HttpRequest originalHttpRequest = new HttpRequest(HttpMethod.GET, expectedPath, SAMPLE_QUERY_PARAMETER, HttpVersion.ONE_DOT_ONE, SAMPLE_HEADER, expectedBody);
 
         String actualString = originalHttpRequest.toString();
 
         HttpRequest unserializedHttpRequest = HttpRequest.fromString(actualString);
 
-        Assert.assertEquals(Method.GET, unserializedHttpRequest.getMethod());
+        Assert.assertEquals(HttpMethod.GET, unserializedHttpRequest.getHttpMethod());
         Assert.assertEquals(expectedPath, unserializedHttpRequest.getPath());
         Assert.assertEquals(
                 SAMPLE_QUERY_PARAMETER.getParameter("sampleQueryParamKey"),
@@ -150,13 +150,13 @@ public class HttpRequestTest {
         String expectedPath = "/test";
         String expectedBody = "Test";
 
-        HttpRequest originalHttpRequest = new HttpRequest(Method.GET, expectedPath, SAMPLE_QUERY_PARAMETERS, HttpVersion.ONE_DOT_ONE, SAMPLE_HEADER, expectedBody);
+        HttpRequest originalHttpRequest = new HttpRequest(HttpMethod.GET, expectedPath, SAMPLE_QUERY_PARAMETERS, HttpVersion.ONE_DOT_ONE, SAMPLE_HEADER, expectedBody);
 
         String actualString = originalHttpRequest.toString();
 
         HttpRequest unserializedHttpRequest = HttpRequest.fromString(actualString);
 
-        Assert.assertEquals(Method.GET, unserializedHttpRequest.getMethod());
+        Assert.assertEquals(HttpMethod.GET, unserializedHttpRequest.getHttpMethod());
         Assert.assertEquals(expectedPath, unserializedHttpRequest.getPath());
         Assert.assertEquals(
                 SAMPLE_QUERY_PARAMETERS.getParameter("sampleQueryParamKey1"),

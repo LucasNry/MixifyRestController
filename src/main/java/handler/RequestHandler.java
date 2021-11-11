@@ -5,7 +5,7 @@ import model.ConnectionType;
 import model.Headers;
 import model.HttpRequest;
 import model.HttpResponse;
-import model.Method;
+import model.HttpMethod;
 import model.RequestStatus;
 
 import java.io.DataInputStream;
@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class RequestHandler implements Runnable {
 
@@ -148,8 +149,8 @@ public class RequestHandler implements Runnable {
     }
 
     private HttpResponse handleHttpRequest(HttpRequest httpRequest) throws Exception {
-        Method requestMethod = httpRequest.getMethod();
-        HttpMethodController httpMethodController = requestMethod.getController();
+        HttpMethod requestHttpMethod = httpRequest.getHttpMethod();
+        HttpMethodController httpMethodController = requestHttpMethod.getController();
 
         try {
             return httpMethodController.handle(httpRequest);
@@ -157,6 +158,7 @@ public class RequestHandler implements Runnable {
             return HttpResponse
                     .builder()
                     .requestStatus(RequestStatus.INTERNAL_SERVER_ERROR)
+                    .body(Arrays.toString(e.getStackTrace()))
                     .build();
         }
     }
