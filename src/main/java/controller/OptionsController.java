@@ -27,7 +27,7 @@ public class OptionsController extends HttpMethodController {
     }
 
     @Override
-    public HttpResponse handle(HttpRequest httpRequest) {
+    public synchronized HttpResponse handle(HttpRequest httpRequest) {
         String path = httpRequest.getPath();
         Headers requestHeaders = httpRequest.getHeaders();
 

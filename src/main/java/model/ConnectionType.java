@@ -13,7 +13,7 @@ public enum ConnectionType {
 
     public static ConnectionType fromValue(String value) {
         for (ConnectionType connectionType : ConnectionType.values()) {
-            if (value.equals(connectionType.value)) {
+            if (connectionType.value.equals(value)) {
                 return connectionType;
             }
         }

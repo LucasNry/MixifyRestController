@@ -1,6 +1,7 @@
 package handler;
 
 import controller.HttpMethodController;
+import lombok.SneakyThrows;
 import model.ConnectionType;
 import model.Headers;
 import model.HttpRequest;
@@ -33,13 +34,25 @@ public class RequestHandler implements Runnable {
         this.clientOutputStream = clientSocket.getOutputStream();
     }
 
+    @SneakyThrows
     @Override
     public void run() {
+        System.out.println(String.format("Opened connection on Thread %s", Thread.currentThread().getName()));
         try {
             handle();
         } catch (Exception e) {
             e.printStackTrace();
+            postHttpResponse(
+                    HttpResponse
+                            .builder()
+                            .requestStatus(RequestStatus.REQUEST_TIMEOUT)
+                            .build()
+            );
+        } finally {
+            System.out.println("Ran destruction code");
+            closeStreams();
         }
+        System.out.println(String.format("Closed connection - Thread %s is %s", Thread.currentThread().getName(), Thread.currentThread().getState()));
     }
 
     public void handle() throws Exception {
@@ -76,10 +89,6 @@ public class RequestHandler implements Runnable {
                 handleRequest(httpRequest);
                 break;
         }
-
-        clientInputStream.close();
-        clientOutputStream.close();
-        clientSocket.close();
     }
 
     private void handleKeepAliveRequest(HttpRequest httpRequest) throws Exception {
@@ -175,6 +184,11 @@ public class RequestHandler implements Runnable {
 
     private HttpRequest getHttpRequest(InputStream inputStream) throws IOException {
         DataInputStream dataInputStream = new DataInputStream(inputStream);
+
+        if (dataInputStream.available() <= 0) {
+            return null;
+        }
+
         byte[] requestBuffer = new byte[dataInputStream.available()];
         dataInputStream.readFully(requestBuffer);
 
@@ -190,5 +204,11 @@ public class RequestHandler implements Runnable {
     private void postHttpResponse(HttpResponse httpResponse) throws IOException {
         String stringifiedResponse = httpResponse.toString();
         clientOutputStream.write(stringifiedResponse.getBytes());
+    }
+
+    private void closeStreams() throws IOException {
+        clientInputStream.close();
+        clientOutputStream.close();
+        clientSocket.close();
     }
 }
