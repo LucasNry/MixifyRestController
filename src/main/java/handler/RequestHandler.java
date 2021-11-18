@@ -9,6 +9,7 @@ import model.HttpResponse;
 import model.HttpMethod;
 import model.RequestStatus;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +38,6 @@ public class RequestHandler implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
-        System.out.println(String.format("Opened connection on Thread %s", Thread.currentThread().getName()));
         try {
             handle();
         } catch (Exception e) {
@@ -45,21 +45,19 @@ public class RequestHandler implements Runnable {
             postHttpResponse(
                     HttpResponse
                             .builder()
-                            .requestStatus(RequestStatus.REQUEST_TIMEOUT)
+                            .requestStatus(RequestStatus.INTERNAL_SERVER_ERROR)
                             .build()
             );
         } finally {
-            System.out.println("Ran destruction code");
             closeStreams();
         }
-        System.out.println(String.format("Closed connection - Thread %s is %s", Thread.currentThread().getName(), Thread.currentThread().getState()));
     }
 
     public void handle() throws Exception {
         HttpRequest httpRequest;
 
         try {
-            httpRequest = getHttpRequest(clientInputStream);
+            httpRequest = getHttpRequest();
         } catch (Exception e) {
             e.printStackTrace();
             postHttpResponse(
@@ -71,17 +69,12 @@ public class RequestHandler implements Runnable {
             return;
         }
 
-        if (httpRequest == null) {
-            return;
-        }
-
         Headers requestHeaders = httpRequest.getHeaders();
         String connectionHeader = requestHeaders.getHeader(Headers.CONNECTION);
         ConnectionType connectionType = ConnectionType.fromValue(connectionHeader);
 
         switch (connectionType) {
             case KEEP_ALIVE:
-                handleRequest(httpRequest);
                 handleKeepAliveRequest(httpRequest);
                 break;
             case CLOSE:
@@ -92,63 +85,58 @@ public class RequestHandler implements Runnable {
     }
 
     private void handleKeepAliveRequest(HttpRequest httpRequest) throws Exception {
+        handleRequest(httpRequest);
+
         Headers headers = httpRequest.getHeaders();
         int timeout;
         int maxCon;
 
-        try {
-            String keepAliveHeaderContent = headers.getHeader(Headers.KEEP_ALIVE);
+        String keepAliveHeaderContent = headers.getHeader(Headers.KEEP_ALIVE);
+        if (keepAliveHeaderContent != null) {
             String[] splitContent = keepAliveHeaderContent.split(KEEP_ALIVE_SEPARATOR);
 
             timeout = getValueFromKVPair(splitContent[0]); // ms
             maxCon = getValueFromKVPair(splitContent[1].substring(1)); // Removing preceding space
-        } catch (Exception e) {
+        } else {
             timeout = DEFAULT_TIMEOUT;
             maxCon = DEFAULT_MAX_CON;
         }
 
-        int nOfConnections = 1;
+        int nOfConnections = 0;
         long timeOfLastRequest = System.currentTimeMillis();
         boolean isKeepAlive;
-        while (
-                nOfConnections <= maxCon &&
-                (System.currentTimeMillis() - timeOfLastRequest) <= timeout
-        ) {
-            if (clientInputStream.available() > 0) {
-                HttpRequest newHttpRequest;
-                try {
-                    newHttpRequest = getHttpRequest(clientInputStream);
-                } catch (Exception e) {
-                    postHttpResponse(
-                            HttpResponse
-                                    .builder()
-                                    .requestStatus(RequestStatus.BAD_REQUEST)
-                                    .build()
-                    );
-                    return;
-                }
 
-                if (newHttpRequest == null) {
-                    continue;
-                }
+        do {
+            if (clientInputStream.available() <= 0) {
+                continue;
+            }
 
-                timeOfLastRequest = System.currentTimeMillis();
-                handleRequest(newHttpRequest);
+            HttpRequest newHttpRequest;
+            try {
+                newHttpRequest = getHttpRequest();
+            } catch (Exception e) {
+                e.printStackTrace();
+                postHttpResponse(
+                        HttpResponse
+                                .builder()
+                                .requestStatus(RequestStatus.BAD_REQUEST)
+                                .build()
+                );
+                return;
+            }
 
-                isKeepAlive = isKeepAlive(newHttpRequest.getHeaders());
-                if (!isKeepAlive) {
-                    return;
-                }
+            timeOfLastRequest = System.currentTimeMillis();
+            handleRequest(newHttpRequest);
+
+            isKeepAlive = isKeepAlive(newHttpRequest.getHeaders());
+            if (!isKeepAlive) {
+                return;
             }
 
             nOfConnections++;
-        }
-
-        postHttpResponse(
-                HttpResponse
-                        .builder()
-                        .requestStatus(RequestStatus.REQUEST_TIMEOUT)
-                        .build()
+        } while (
+                nOfConnections <= maxCon &&
+                (System.currentTimeMillis() - timeOfLastRequest) <= timeout
         );
     }
 
@@ -164,6 +152,7 @@ public class RequestHandler implements Runnable {
         try {
             return httpMethodController.handle(httpRequest);
         } catch (Exception e) {
+            e.printStackTrace();
             return HttpResponse
                     .builder()
                     .requestStatus(RequestStatus.INTERNAL_SERVER_ERROR)
@@ -182,20 +171,12 @@ public class RequestHandler implements Runnable {
         return Integer.parseInt(timeoutKeyValuePair.split(KEY_VALUE_SEPARATOR)[1]);
     }
 
-    private HttpRequest getHttpRequest(InputStream inputStream) throws IOException {
-        DataInputStream dataInputStream = new DataInputStream(inputStream);
-
-        if (dataInputStream.available() <= 0) {
-            return null;
-        }
-
-        byte[] requestBuffer = new byte[dataInputStream.available()];
-        dataInputStream.readFully(requestBuffer);
-
+    private HttpRequest getHttpRequest() throws IOException {
+        byte[] requestBuffer = readInput();
         String requestAsString = new String(requestBuffer);
 
         if (requestAsString.isEmpty()) {
-            return null;
+            throw new IllegalArgumentException("Request can't be empty");
         }
 
         return HttpRequest.fromString(requestAsString);
@@ -204,6 +185,17 @@ public class RequestHandler implements Runnable {
     private void postHttpResponse(HttpResponse httpResponse) throws IOException {
         String stringifiedResponse = httpResponse.toString();
         clientOutputStream.write(stringifiedResponse.getBytes());
+    }
+
+    private byte[] readInput() throws IOException {
+        DataInputStream dataInputStream = new DataInputStream(clientInputStream);
+
+        while(dataInputStream.available() <= 0);
+
+        byte[] requestBuffer = new byte[dataInputStream.available()];
+        dataInputStream.readFully(requestBuffer);
+
+        return requestBuffer;
     }
 
     private void closeStreams() throws IOException {
