@@ -1,6 +1,7 @@
 package controller;
 
-import handler.RequestHandler;
+import factory.RequestHandlerFactory;
+import model.Protocol;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -12,17 +13,21 @@ public abstract class ServerController {
 
     private ServerSocket serverSocket;
 
+    private Protocol protocol;
+
     private ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
 
-    public ServerController(int port) throws IOException {
+    public ServerController(int port, Protocol protocol) throws IOException {
         serverSocket = new ServerSocket(port);
-        System.out.println(String.format("Running on port [%s]", port));
+        this.protocol = protocol;
     }
 
     public void start() throws Exception {
+        System.out.println(String.format("Running on port [%s]", serverSocket.getLocalPort()));
+
         while (true) {
             Socket socket = serverSocket.accept();
-            threadPoolExecutor.submit(new RequestHandler(socket));
+            threadPoolExecutor.submit(RequestHandlerFactory.createHandlerFactory(protocol, socket));
         }
     }
 }

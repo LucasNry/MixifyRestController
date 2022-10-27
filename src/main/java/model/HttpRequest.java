@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Data
 @AllArgsConstructor(access=AccessLevel.PACKAGE)
-public class HttpRequest {
+public class HttpRequest implements ProtocolRequest {
 
     private static final String CRLF = "\r\n";
     private static final String INITIAL_LINE_TEMPLATE = "%s %s %s";
@@ -25,7 +25,7 @@ public class HttpRequest {
     private static final String PARAMETER_VALUE_SEPARATOR = "=";
     private static final String HEADER_SEPARATOR = ":";
 
-    private HttpMethod httpMethod;
+    private Method method;
 
     private String path;
 
@@ -42,7 +42,7 @@ public class HttpRequest {
         String[] requestLines = requestString.split(CRLF_REGEX);
 
         String[] initialLine = parseInitialLine(requestLines[index]);
-        HttpMethod httpMethod = HttpMethod.fromString(initialLine[0]);
+        Method method = Method.fromString(initialLine[0]);
         HttpVersion version = HttpVersion.fromString(initialLine[2]);
 
         String[] pathDivided = initialLine[1].split(PATH_SEPARATOR);
@@ -65,7 +65,7 @@ public class HttpRequest {
         String body = parseBody(requestLines, index);
 
         return new HttpRequest(
-                httpMethod,
+                method,
                 path,
                 Optional
                         .ofNullable(queryParameters)
@@ -122,7 +122,7 @@ public class HttpRequest {
         StringBuilder sb = new StringBuilder();
 
         sb
-                .append(String.format(INITIAL_LINE_TEMPLATE, httpMethod.toString(), String.format(PATH_TEMPLATE, path, queryParameters.toString()), httpVersion.getStringValue()))
+                .append(String.format(INITIAL_LINE_TEMPLATE, method.toString(), String.format(PATH_TEMPLATE, path, queryParameters.toString()), httpVersion.getStringValue()))
                 .append(CRLF)
                 .append(headers.toString());
 

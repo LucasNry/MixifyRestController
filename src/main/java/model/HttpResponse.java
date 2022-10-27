@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Data
 @Builder
-public class HttpResponse {
+public class HttpResponse implements ProtocolResponse {
     private static final String CRLF = "\r\n";
     private static final String INITIAL_LINE_TEMPLATE = "%s %s %s";
 
